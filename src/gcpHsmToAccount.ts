@@ -120,6 +120,27 @@ async function sign(
   }
 }
 
+function getClientCredentials() {
+  try {
+    // handle if process is not available i.e. browser
+    return process.env.GOOGLE_APPLICATION_CREDENTIAL_EMAIL &&
+      process.env.GOOGLE_APPLICATION_CREDENTIAL_PRIVATE_KEY
+      ? {
+          credentials: {
+            client_email: process.env.GOOGLE_APPLICATION_CREDENTIAL_EMAIL,
+            private_key:
+              process.env.GOOGLE_APPLICATION_CREDENTIAL_PRIVATE_KEY.replace(
+                /\\n/gm,
+                '\n',
+              ),
+          },
+        }
+      : {}
+  } catch {
+    return {}
+  }
+}
+
 export async function gcpHsmToAccount({
   hsmKeyVersion,
   kmsClient: kmsClient_,
@@ -127,7 +148,8 @@ export async function gcpHsmToAccount({
   hsmKeyVersion: string
   kmsClient?: KeyManagementServiceClient
 }): Promise<GcpHsmAccount> {
-  const kmsClient = kmsClient_ ?? new KeyManagementServiceClient()
+  const kmsClient =
+    kmsClient_ ?? new KeyManagementServiceClient(getClientCredentials())
   const publicKey = await getPublicKey(kmsClient, hsmKeyVersion)
   const address = publicKeyToAddress(publicKey)
 
